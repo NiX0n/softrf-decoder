@@ -1,90 +1,226 @@
 # Architecture
 
-## High-Level Architecture
+## Guiding Principle
 
-RTL-SDR / IQ File
-        |
-        v
-    GNU Radio
-        |
-        v
- Frame Recovery
-        |
-        v
- Legacy Decoder
-        |
-        v
- Track Manager
-        |
-        v
- Output Adapters
+GNU Radio performs DSP.
+
+TypeScript performs everything else.
 
 ---
 
-## Development Phases
+# High-Level Architecture
 
-### Phase 0
+                 IQ Samples
+                       |
+                       v
+                GNU Radio DSP
+                       |
+                       v
+                Frame Recovery
+                       |
+                       v
+                Legacy Decoder
+                       |
+                       v
+                 Track Manager
+                       |
+                       v
+                Output Adapters
 
-Planning
+---
 
-Deliverables:
+# Architectural Layers
 
-- Documentation
-- Specifications
-- Architecture
+## Layer 1 - DSP
 
-### Phase 1
+Responsibilities:
 
-Offline Decode
+- SDR integration
+- filtering
+- synchronization
+- demodulation
+- symbol recovery
+- frame extraction
 
-Input:
+Technology:
 
-Known-good IQ sample
+- GNU Radio
 
-Output:
+Outputs:
 
-Decoded telemetry
+- recovered frames
 
-### Phase 2
+---
 
-Decoder Library
+## Layer 2 - Protocol Decoding
 
-Refactor prototype into maintainable components.
+Responsibilities:
 
-### Phase 3
+- frame validation
+- CRC validation
+- payload decoding
 
-Realtime Receiver
+Technology:
 
-Replace file input with RTL-SDR.
+- TypeScript
 
-### Phase 4
+Outputs:
 
-Track Management
+- telemetry objects
 
-Convert packets into track state.
+---
 
-### Phase 5
+## Layer 3 - Tracking
 
-Output Adapters
+Responsibilities:
 
-Implement:
+- track state
+- track updates
+- object lifecycle
+
+Technology:
+
+- TypeScript
+
+Outputs:
+
+- track objects
+
+---
+
+## Layer 4 - Adapters
+
+Responsibilities:
 
 - JSON
 - GeoJSON
 - KML
 
-### Phase 6
+Technology:
 
-NestJS Integration
+- TypeScript
 
-Wrap proven services into a long-running application.
+Outputs:
+
+- external representations
 
 ---
 
-## Architectural Principles
+## Layer 5 - Service Host
 
-- GNU Radio is a permanent dependency.
-- DSP stays in GNU Radio.
-- Business logic remains separate from DSP.
-- Output formats are adapters.
-- Protocol decoding remains independent of output formats.
+Responsibilities:
+
+- configuration
+- lifecycle
+- dependency injection
+- endpoint exposure
+
+Technology:
+
+- NestJS
+
+---
+
+# Development Lifecycle
+
+## Phase 0
+
+Planning
+
+Deliverables:
+
+- specifications
+- architecture
+- documentation
+
+Acceptance:
+
+documentation approved
+
+---
+
+## Phase 1
+
+Offline Decode Prototype
+
+Input:
+
+control IQ capture
+
+Output:
+
+decoded telemetry
+
+Acceptance:
+
+known validation condition is satisfied
+
+---
+
+## Phase 2
+
+Decoder Library
+
+Goal:
+
+refactor prototype into maintainable libraries
+
+Acceptance:
+
+automated tests pass
+
+---
+
+## Phase 3
+
+Realtime Receiver
+
+Goal:
+
+replace file input with RTL-SDR
+
+Acceptance:
+
+live telemetry received
+
+---
+
+## Phase 4
+
+Track Manager
+
+Goal:
+
+produce realtime track state
+
+Acceptance:
+
+track updates observable
+
+---
+
+## Phase 5
+
+Output Adapters
+
+Goal:
+
+produce external representations
+
+Acceptance:
+
+at least one adapter validated
+
+---
+
+## Phase 6
+
+NestJS Host
+
+Goal:
+
+assemble proven components into long-running application
+
+Acceptance:
+
+end-to-end operation
