@@ -1,0 +1,9 @@
+# Firmware source (reference only, NOT a dependency)
+SoftRF-firmware/
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Captured signal files (large, sensitive)
+*.wav
