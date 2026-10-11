@@ -1,8 +1,23 @@
 # System Facts
 
 This document contains verified facts only.
-
 Speculation belongs in REVERSE_ENGINEERING_NOTES.md.
+
+> **Source repo**: https://github.com/lyusupov/SoftRF (commit `973a8d73`, branch `master`)
+>
+> All file paths below are relative to the repo root. To view any file on GitHub:
+> `https://github.com/lyusupov/SoftRF/blob/master/<path>`
+>
+> Key files:
+> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.h` — syncword, payload size, CRC type, key definitions
+> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.cpp` — `legacy_proto_desc`, `legacy_encode`/`legacy_decode`, XXTEA, coordinate conversion
+> - `software/firmware/source/SoftRF/src/driver/RF.h` — RF constants (modulation, whitening, bit order)
+> - `software/firmware/source/SoftRF/src/driver/radio/radiolib_extra.cpp` — CC1101 register setup
+> - `software/firmware/source/SoftRF/src/driver/radio/nordic.cpp` — nRF905 driver
+> - `software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_config.c` — CC1101 PHY profiles
+> - `software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_freqplan.h` — US frequency plan
+> - `software/firmware/source/libraries/CRC/lib_crc.cpp` — CRC-16 implementation
+> - `software/firmware/source/libraries/nRF905/nRF905.h` — nRF905 register definitions
 
 ---
 

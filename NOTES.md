@@ -1,9 +1,29 @@
 # SoftRF Decoder — Research & Documentation
 
 > **Status**: Active. All findings below are from direct reading of the SoftRF firmware
-> source code at `~/SoftRF-firmware` (cloned from https://github.com/lyusupov/SoftRF.git,
-> commit `973a8d73`, branch `master`). The firmware source is **not** a dependency and
-> is **not** committed to this repository.
+> source code (cloned from https://github.com/lyusupov/SoftRF, commit `973a8d73`, branch `master`).
+> The firmware source is **not** a dependency and is **not** committed to this repository.
+>
+> **No local clone? Every citation below can be verified via GitHub:**
+>
+> ```
+> BASE = https://github.com/lyusupov/SoftRF/blob/master
+> ```
+>
+> Key files (direct links):
+> | File | GitHub URL |
+> |------|------------|
+> | Legacy.h | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/protocol/radio/Legacy.h |
+> | Legacy.cpp | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/protocol/radio/Legacy.cpp |
+> | P3I.cpp | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/protocol/radio/P3I.cpp |
+> | RF.h | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/driver/RF.h |
+> | radiolib_extra.cpp | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/driver/radio/radiolib_extra.cpp |
+> | nordic.cpp | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/driver/radio/nordic.cpp |
+> | nordic.h | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/SoftRF/src/driver/radio/nordic.h |
+> | nRF905.h | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/libraries/nRF905/nRF905.h |
+> | ti_easylink_config.c | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_config.c |
+> | ti_easylink_freqplan.h | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_freqplan.h |
+> | lib_crc.cpp | https://github.com/lyusupov/SoftRF/blob/master/software/firmware/source/libraries/CRC/lib_crc.cpp |
 
 ---
 
