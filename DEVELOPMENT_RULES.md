@@ -16,7 +16,7 @@ Prefer boring solutions.
 
 Priority order:
 
-1. SoftRF firmware source
+1. SoftRF firmware source (https://github.com/lyusupov/SoftRF)
 2. Validated RF captures
 3. SYSTEM_FACTS.md
 4. PROJECT_SPEC.md
@@ -27,6 +27,25 @@ If disagreement occurs:
 Firmware wins.
 
 Observed RF evidence wins over assumptions.
+
+Every claim in documentation must be traceable to the firmware source.
+Do not state a fact without a `file:line` citation.
+If the firmware source does not confirm a claim, mark it as a hypothesis
+in REVERSE_ENGINEERING_NOTES.md, not as a fact in SYSTEM_FACTS.md.
+
+The firmware source is authoritative over:
+- Protocol structure (sync word, frame layout, CRC, encryption)
+- Modulation parameters (data rate, deviation, filtering)
+- Frequency plan (channels, spacing, offsets)
+- Any constant or behavior that appears in the source code
+
+The firmware source does NOT define:
+- The specific device's configuration (channel, device ID, encryption key)
+- The specific application's message semantics
+- The observed signal characteristics (which must come from captures)
+
+When a fact comes from a capture rather than the firmware source, label it
+as "observed" and cite the capture file and analysis method.
 
 ---
 
@@ -139,6 +158,27 @@ Document protocol discoveries.
 Document assumptions.
 
 Promote verified discoveries into SYSTEM_FACTS.md.
+
+Every technical claim must cite its source with:
+- File path (relative to the source repo)
+- Line number(s)
+- GitHub URL for remote verification (append path to the repo base URL)
+
+Documentation must be consumable by both humans and other AI agents.
+A fresh agent session with only the repo URL and a WAV sample must be able to
+pick up from where the previous agent left off using the committed documentation.
+
+The firmware source repository (https://github.com/lyusupov/SoftRF) is for
+reference only. It is not a dependency, not committed, not required at build time.
+All citations must be verifiable via GitHub without a local clone.
+
+Before ending a session, all working memory (findings, hypotheses, partial
+results) must be persisted to the appropriate documentation files. Nothing
+documented only in conversation context may be considered durable.
+
+Session winding down: prioritize documentation and committing work over
+further investigation. An agent may leave investigation half-finished if the
+documentation is complete.
 
 ---
 
