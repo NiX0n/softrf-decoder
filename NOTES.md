@@ -6,7 +6,7 @@ Decoding SoftRF Legacy telemetry from SDR capture.
 ## Source References
 
 All protocol facts below are derived from the SoftRF firmware source code.
-Cloned locally for analysis at `./SoftRF-firmware/` (excluded from git via `.gitignore`).
+Cloned locally for analysis at `~/SoftRF-firmware` (outside the decoder repo).
 
 Firmware repo: `https://github.com/lyusupov/SoftRF.git`
 
@@ -124,7 +124,7 @@ Firmware repo: `https://github.com/lyusupov/SoftRF.git`
 ## For Future Agents / Takeover
 
 1. **Start here**: Read this file + `REVERSE_ENGINEERING_NOTES.md` + `SYSTEM_FACTS.md`
-2. **Firmware source**: At `./SoftRF-firmware/` (local only, not in git). Key files listed above.
+2. **Firmware source**: At `~/SoftRF-firmware` (outside the decoder repo). Key files listed above.
 3. **Capture file**: `~/baseband_915000000Hz_20-35-24_03-10-2026.wav` (898 MB)
 4. **Current blocker**: Cannot reliably detect the FSK signal in the noisy capture. Best syncword match is 56/64 bits.
 5. **What works**: The Python pipeline (load WAV → rotate → filter → FM demod → bit sample) is functional. It just needs the right parameters.
