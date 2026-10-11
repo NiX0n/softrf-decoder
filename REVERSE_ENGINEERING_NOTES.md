@@ -1,14 +1,48 @@
 # Reverse Engineering Notes
 
+# Evidence Classification
+
 This document may contain:
 
-- Discoveries
-- Hypotheses
-- Open questions
-- Experimental results
+- hypotheses
+- observations
+- experiments
+- theories
 
-Content here is not automatically considered fact.
-Verified information must be promoted into SYSTEM_FACTS.md.
+Nothing in this document automatically becomes fact.
+
+Verified findings shall be promoted into SYSTEM_FACTS.md.
+
+---
+
+# Confidence Levels
+
+High
+
+- Firmware supported
+- Independently verified
+
+Medium
+
+- Strong evidence
+- Not fully proven
+
+Low
+
+- Plausible
+- Requires validation
+
+---
+
+# Claim Format
+
+Every major claim should be documented as:
+
+Claim:
+Source:
+Evidence:
+Confidence:
+Status:
 
 > **Source repo**: https://github.com/lyusupov/SoftRF (commit `973a8d73`, branch `master`)
 >
