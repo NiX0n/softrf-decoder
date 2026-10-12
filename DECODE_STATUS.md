@@ -13,15 +13,9 @@
 | CRC | ✅ Known | CCITT-F, poly 0x1021, init 0xFFFF, pre-seed 0x31,0xFA,0xB6 |
 | Encryption | ✅ Known | XXTEA, 6 rounds, 5 words (20 bytes), key = LEGACY_KEY1 ⊕ LEGACY_KEY2 ⊕ v6key |
 | Key derivation | ✅ Known | `make_v6_key(timestamp, address)` from firmware |
-| WAV capture | ❌ Invalid | Static/noise, no FSK modulation |
-| Decode | ⏸ Blocked | Need valid capture |
+| WAV capture | Unknown | The current analysis pipeline did not identify the expected 2-FSK characteristics. Confidence: Medium. Alternative explanations remain possible. |
+| Decode | Uknown | Uknown |
 
-## Next Steps
-
-1. **Capture a valid WAV** — trigger the remote unit, ensure the SDR is recording
-2. **Validate the capture** — confirm time-varying signal, energy at ±50 kHz
-3. **Run the decoder** — `python3 prototype/decode.py <path-to-wav>`
-4. **Iterate** — if decode fails, check syncword alignment, CRC, XXTEA key
 
 ## Key Files
 
