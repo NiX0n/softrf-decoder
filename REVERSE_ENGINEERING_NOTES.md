@@ -200,3 +200,50 @@ The radio reads 2 bytes per data byte:
 - [ ] Test decoder against captured WAV
 - [ ] Verify CRC pre-seed interpretation (skip 8-byte syncword + first payload byte)
 - [ ] Check if the `LEGACY_PREAMBLE_SIZE = 1` means 1 byte of `0x55` before syncword
+
+---
+
+## 10. Signal Analysis Findings (2026-10-12)
+
+### WAV File Properties
+- File: `/home/ubuntu/.openclaw/workspace/baseband_915000000Hz_20-35-24_03-10-2026.wav`
+- Sample rate: 20 MS/s (20,000,000 Hz)
+- Channels: 2 (I/Q baseband)
+- Format: 32-bit float
+- Duration: ~5.6 seconds
+- Total samples: ~112,328,704 per channel
+
+### Signal Diagnosis
+**The captured WAV file does NOT contain the expected ±50 kHz FSK tones.**
+
+Evidence:
+1. **FFT analysis**: Dominant DC peak (magnitude 4851.55) with negligible sidebands. No significant energy at ±50 kHz.
+2. **Phase derivative histogram**: Peaks at ~2 kHz and ±98 kHz, but NOT at ±50 kHz.
+3. **I/Q channel statistics**: Both channels static around (0.02, -0.03) with negligible variance (std ~0.004).
+4. **I channel quantization**: Values quantized to 5 discrete levels (0.015625, 0.023438, 0.031250, etc.), suggesting a heavily quantized or improperly conditioned signal.
+
+### Conclusion
+The recording appears to be a **static DC offset** or an **improperly conditioned baseband signal**, not a valid time-varying FSK modulated signal. Standard demodulation is impossible on this raw data.
+
+### Failed Demodulation Attempts
+1. **Standard FM demodulation**: Produced all-zero bits (no signal variation).
+2. **Phase derivative method**: Frequency histogram showed no energy at ±50 kHz.
+3. **Direct I/Q thresholding**: I channel quantized to 5 levels; bit pattern regular (100 samples/bit) but not Manchester.
+4. **AGC + DC removal**: No improvement; signal remains static.
+
+### Likely Causes
+- **Hardware issue**: Capture hardware/software may have logged a static level instead of the modulated signal.
+- **DC coupling**: The baseband signal may have been DC-coupled, resulting in a constant offset.
+- **Wrong port/interface**: The signal may have been captured on the wrong channel or interface.
+- **Gain stage failure**: The AGC or gain stage may have failed, clamping the signal to a fixed level.
+
+### Next Steps (for future sessions)
+1. **Recapture the signal** with a known-good SDR setup (RTL-SDR, HackRF, or similar).
+2. **Verify the capture chain**: Ensure the SDR is properly configured for 915 MHz, 2-FSK, 50 kHz deviation.
+3. **Test with a known transmitter**: Send a test packet from a known aircraft/ADS-B transmitter and verify the decoder works.
+4. **Alternative**: Find a known-good reference capture of a SoftRF/ADS-B signal and test the decoder against it.
+
+### Reference
+- Skill: `~/.openclaw/agents/fi/agent/workshop-skills/rf-baseband-analysis/SKILL.md`
+- Firmware: `/tmp/SoftRF-firmware/` (commit 973A8D73)
+- Protocol: 2-FSK 100 kbps, 50 kHz deviation, Manchester, 8-byte syncword, 24-byte payload, CRC16 CCITT-F, XXTEA
