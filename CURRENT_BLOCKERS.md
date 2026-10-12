@@ -105,3 +105,31 @@ Passing CRC
 Decoded Telemetry
 
 Only then is Phase 1 complete.
+
+# Decoder Evidence Ladder
+
+The decoder progresses through the following stages:
+
+IQ Capture
+    ↓
+Burst Detection
+    ↓
+Carrier Identification
+    ↓
+Modulation Classification
+    ↓
+Symbol Recovery
+    ↓
+Frame Recovery
+    ↓
+Sync Validation
+    ↓
+CRC Validation
+    ↓
+Payload Recovery
+    ↓
+Telemetry Decode
+
+The earliest failing stage must always be identified.
+
+Development shall focus exclusively on the earliest failing stage.
