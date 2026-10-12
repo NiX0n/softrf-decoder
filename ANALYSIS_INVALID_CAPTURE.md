@@ -2,11 +2,17 @@
 
 **Date:** 2026-10-12
 **Analyst:** Assistant
-**Status:** CONFIRMED — Capture does not contain valid FSK signal
+**Status:** ❌ **SUPERSEDED** — See CRITICAL_FINDINGS_2026-10-12.md
+
+> **IMPORTANT:** This analysis was based on the incorrect assumption that the SoftRF
+> legacy protocol uses 2-FSK modulation. The signal in the capture is VALID but is
+> OOK/ASK at ~769 ksym/s, not 2-FSK at 100 kbps. The "invalid capture" conclusion
+> was wrong — the capture is valid, it just contains a different modulation type
+> than expected.
 
 ---
 
-## Executive Summary
+## Executive Summary (SUPERSEDED)
 
 The captured WAV file (`baseband_915000000Hz_20-35-24_03-10-2026.wav`) does **NOT** contain a valid 2-FSK signal. The signal is a **continuous wave (CW) tone** with very small variations, consistent with LO leakage or a beacon signal. Standard FSK demodulation is impossible with this capture.
 

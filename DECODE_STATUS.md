@@ -6,65 +6,55 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Modulation | ✅ Known | 2-FSK, 100 kbps, ±50 kHz deviation |
-| Whitening | ✅ Known | Manchester (bit-inversion) |
-| Syncword | ✅ Known | `55 99 A5 A9 55 66 65 96` (8 bytes, air order) |
-| Payload structure | ✅ Known | Syncword + raw payload (≥16 bytes) |
-| CRC | ✅ Known | CCITT-F, poly 0x1021, init 0xFFFF, pre-seed 0x31,0xFA,0xB6 |
-| Encryption | ✅ Known | XXTEA, 6 rounds, 5 words (20 bytes), key = LEGACY_KEY1 ⊕ LEGACY_KEY2 ⊕ v6key |
-| Key derivation | ✅ Known | `make_v6_key(timestamp, address)` from firmware |
-| WAV capture | Unknown | The current analysis pipeline did not identify the expected 2-FSK characteristics. Confidence: Medium. Alternative explanations remain possible. |
-| Decode | Uknown | Uknown |
+| Modulation | ✅ Known | OOK/ASK (NOT 2-FSK) — see CRITICAL_FINDINGS |
+| Symbol rate | ✅ Known | ~769 ksym/s (NOT 100 kbps) |
+| Carrier offset | ⚠ PARTIAL | ~-0.779 MHz (could be receiver tuning artifact) |
+| Phase | ✅ Known | Coherent (-55° to -60°) |
+| Bursts | ✅ Known | 12 real bursts, 5.14 ms each |
+| Syncword | ❌ UNKNOWN | Not yet identified (current syncword is for 2-FSK) |
+| Payload structure | ❌ UNKNOWN | Not yet identified |
+| CRC | ❌ UNKNOWN | Not yet identified |
+| Encryption | ❌ UNKNOWN | Not yet identified |
+| WAV capture | ✅ VALID | Supersedes prior "INVALID" conclusion |
+| Decode | ❌ NOT STARTED | Need to identify protocol first |
 
+## Key Finding (2026-10-12)
+
+**The captured signal is OOK/ASK at ~769 ksym/s. This is NOT the SoftRF legacy protocol.**
+
+The prior "capture is invalid" conclusion was wrong. The capture is valid, but the signal is a different protocol than the one we were trying to decode.
+
+### What We Know
+- 12 real bursts, 5.14 ms each
+- OOK/ASK modulation (two-level amplitude)
+- Coherent phase (-55° to -60°)
+- Carrier offset ~-0.779 MHz
+- Symbol rate ~769 ksym/s
+
+### What We Don't Know
+- What protocol this is
+- What the syncword is
+- What the payload structure is
+- Whether it's encrypted
+- What the carrier offset means (signal characteristic vs receiver artifact)
+
+## Next Steps
+
+1. **Verify the receiver setup** — What IF/center frequency was used?
+2. **Check if SoftRF has other protocol variants** — Search the firmware source
+3. **Search for OOK/ASK protocols at ~769 ksym/s** in the 915 MHz band
+4. **Build a new decoder** for OOK/ASK at ~769 ksym/s
+5. **Identify the protocol** — Cross-reference with known protocols
 
 ## Key Files
 
-- `REVERSE_ENGINEERING_NOTES.md` — Protocol details from firmware
-- `SYSTEM_FACTS.md` — Confirmed facts + correction log
-- `prototype/decode.py` — Decoder prototype with self-test
-- `reference/wav_sample/` — (empty — need valid capture)
+- `CRITICAL_FINDINGS_2026-10-12.md` — **THE AUTHORITATIVE DOCUMENT**
+- `REVERSE_ENGINEERING_NOTES.md` — SoftRF legacy protocol spec (NOT applicable to current signal)
+- `softrf_decoder.py` — Decoder for 2-FSK (NOT applicable to current signal)
+- `measure_symbols.py` — Symbol rate measurement
+- `extract_bitstream.py` — Bitstream extraction
 
----
+## Superseded Documents
 
-## Update: 2026-10-12 (Analysis Complete)
-
-### Critical Finding
-
-**The captured WAV file does NOT contain a valid 2-FSK signal.**
-
-Detailed analysis (see `ANALYSIS_INVALID_CAPTURE.md`) confirms:
-- Signal is a **CW tone at ~6.78 MHz** relative to receiver LO
-- Very small variations (std/mean ≈ 2.5)
-- No distinct bursts — envelope is uniformly distributed
-- FFT shows dominant energy at integer fractions of sample rate (spurs)
-- Phase is not changing over time (instantaneous frequency = 0.0 kHz)
-
-### Root Cause
-
-The decoder fails at **Stage 3: Carrier Identification** because the input signal is **not a valid FSK signal**. This is consistent with LO leakage, a beacon signal, or a test tone.
-
-### Recommendations
-
-1. **Verify the SDR setup** — check gain, sample rate, and frequency configuration
-2. **Recapture the signal** with a known-good SDR setup
-3. **Alternative**: Use a reference capture or synthetic signal to test the decoder
-
-### Next Steps
-
-- [ ] Confirm SDR setup with user
-- [ ] Recapture signal with known-good setup
-- [ ] Re-run decoder with new capture
-- [ ] Verify results (syncword, CRC, payload)
-
-### Decoder Implementation Status
-
-The decoder implementation is **complete** and ready for testing:
-- ✅ FM demodulation
-- ✅ Manchester decode
-- ✅ Syncword search
-- ✅ CRC-16 CCITT-F
-- ✅ XXTEA decryption
-- ✅ Key derivation
-- ✅ Coordinate decode
-
-**The decoder is not the problem. The input signal is.**
+- `ANALYSIS_INVALID_CAPTURE.md` — **SUPERSEDED** — prior "capture is invalid" conclusion was wrong
+- Prior sections of this document claiming the capture is invalid — **SUPERSEDED**
