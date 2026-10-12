@@ -218,3 +218,65 @@ Coordinate base: **40.0°N, 40.0°W**. Source: `Legacy.cpp:221`
 - **Frequency hopping**: Not present in Legacy (P3I uses fixed channel)
 - **Receiver bit order**: nRF905 receives MSB first; software decodes directly
 - **Exact preamble length on air**: nRF905 generates 26×1 + 26×0 preamble (documented in `nRF905.h:228`)
+
+---
+
+## Final Status (2026-10-12)
+
+### Decoder Implementation Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| FM demodulation | **BLOCKED** | Input WAV does not contain valid FSK signal |
+| Manchester decode | ✅ Implemented | Per firmware spec (OGN manchester.h) |
+| Syncword search | ✅ Implemented | `55 99 A5 A9 55 66 65 96` |
+| CRC-16 CCITT-F | ✅ Implemented | Poly 0x1021, init 0xFFFF, pre-seed 0x31 0xFA 0xB6 |
+| XXTEA decryption | ✅ Implemented | 6 rounds, 5 words (20 bytes) at offset 1 |
+| Key derivation | ✅ Implemented | `make_v6_key()` per firmware |
+| Coordinate decode | ✅ Implemented | lat = 40°N + val×10⁻⁷, lon = 40°W + val×10⁻⁷ |
+
+### Critical Blocker
+
+**The captured WAV file does not contain a valid 2-FSK signal.**
+
+The I/Q channels are static around (0.02, -0.03) with negligible variance.
+FFT shows no energy at ±50 kHz. Standard demodulation is impossible.
+
+**Next step**: Recapture the signal with a known-good SDR setup, or find a
+reference capture of a known SoftRF/ADS-B transmission.
+
+### XXTEA Correction
+
+**IMPORTANT**: The XXTEA parameters in this document are **WRONG** for the
+Legacy protocol. The correct parameters (verified against firmware at
+`Legacy.cpp:94-120`) are:
+
+| Parameter | Correct Value | Wrong Value (in this doc) |
+|-----------|---------------|---------------------------|
+| Rounds | **6** | 32 |
+| Block size | **5 words (20 bytes)** at offset 1 | 8 words (32 bytes) |
+| btea call | `btea((uint32_t*)pkt + 1, -5, key)` | `btea(v, -8, key)` |
+
+The 5-word encryption covers bytes 4-23 of the 24-byte packet. Word 0
+(bytes 0-3) is NOT encrypted and contains the 24-bit address + 4-bit type.
+
+### File Manifest
+
+| File | Purpose |
+|------|---------|
+| `REVERSE_ENGINEERING_NOTES.md` | Complete protocol spec, signal analysis, open questions |
+| `SYSTEM_FACTS.md` | Verified firmware facts (note XXTEA error above) |
+| `DECODE_STATUS.md` | Decoder status, test results, blocker documentation |
+| `prototype/decode.py` | Python decoder implementation (complete except valid input) |
+| `tests/` | Unit tests for CRC, XXTEA, Manchester decode |
+
+### Commit History (as of 2026-10-12)
+
+```
+e51cbd9 Add signal analysis findings to REVERSE_ENGINEERING_NOTES.md
+df3d9ae Add signal analysis findings and updated decoder documentation
+850d78f Update DECODE_STATUS.md with final analysis and findings
+9be1deb Update REVERSE_ENGINEERING_NOTES.md with comprehensive protocol details
+27c27c4 Expand Reverse Engineering Notes with new sections
+...
+```
