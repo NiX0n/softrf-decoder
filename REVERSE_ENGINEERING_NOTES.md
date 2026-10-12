@@ -1,193 +1,202 @@
-# Reverse Engineering Notes
+# SoftRF Legacy Protocol — Reverse-Engineering Notes
 
-# Evidence Classification
-
-This document may contain:
-
-- hypotheses
-- observations
-- experiments
-- theories
-
-Nothing in this document automatically becomes fact.
-
-Verified findings shall be promoted into SYSTEM_FACTS.md.
-
----
-
-# Confidence Levels
-
-High
-
-- Firmware supported
-- Independently verified
-
-Medium
-
-- Strong evidence
-- Not fully proven
-
-Low
-
-- Plausible
-- Requires validation
-
----
-
-# Claim Format
-
-Every major claim should be documented as:
-
-Claim:
-Source:
-Evidence:
-Confidence:
-Status:
-
-> **Source repo**: https://github.com/lyusupov/SoftRF (commit `973a8d73`, branch `master`)
+> Authoritative source: SoftRF firmware @ commit `973A8D73` (branch master),
+> repo `https://github.com/lyusupov/SoftRF`.
 >
-> All file paths below are relative to the repo root. To view any file on GitHub:
-> `https://github.com/lyusupov/SoftRF/blob/master/<path>`
+> Files consulted:
+> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.cpp` (decode/encode, btea, key)
+> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.h` (packet struct, syncword, keys, CRC)
+> - `software/firmware/source/SoftRF/src/driver/radio/radiolib.cpp` (RX path: CRC, Manchester decode)
+> - `software/firmware/source/libraries/CRC/lib_crc.cpp` (update_crc_ccitt)
+> - `software/firmware/source/libraries/OGN/manchester.h` (ManchesterDecode table)
 >
-> Key files:
-> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.h` — syncword, payload size, CRC type, key definitions
-> - `software/firmware/source/SoftRF/src/protocol/radio/Legacy.cpp` — `legacy_proto_desc`, `legacy_encode`/`legacy_decode`, XXTEA, coordinate conversion
-> - `software/firmware/source/SoftRF/src/driver/RF.h` — RF constants (modulation, whitening, bit order)
-> - `software/firmware/source/SoftRF/src/driver/radio/radiolib_extra.cpp` — CC1101 register setup
-> - `software/firmware/source/SoftRF/src/driver/radio/nordic.cpp` — nRF905 driver
-> - `software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_config.c` — CC1101 PHY profiles
-> - `software/firmware/source/libraries/EasyLink/src/syscfg/ti_easylink_freqplan.h` — US frequency plan
-> - `software/firmware/source/libraries/CRC/lib_crc.cpp` — CRC-16 implementation
-> - `software/firmware/source/libraries/nRF905/nRF905.h` — nRF905 register definitions
+> This file is the **single source of truth** for the decoder. Anything not
+> written here must be verified against the firmware before use.
 
 ---
 
-# Current Open Questions
+## 1. Air Interface
 
-## Frequency Selection (RESOLVED)
+| Parameter | Value |
+|-----------|-------|
+| Modulation | 2-FSK (GFSK), 915 MHz |
+| Bit rate (raw) | 100 kbps |
+| Deviation | 50 kHz |
+| Whitening | **Manchester** (each 1 data-bit → 2 symbols) |
+| Symbol rate | 200 ksym/s |
+| Preamble | `0x55` × 1 (`RF_PREAMBLE_TYPE_55`) |
+| Syncword (air) | `55 99 A5 A9 55 66 65 96` (8 bytes) |
+| Payload size | **24 bytes** (after syncword) |
+| CRC | **CCITT-F (poly 0x1021, init 0xFFFF)**, 2 bytes |
+| Bit inversion | **NO** (only for `RF_WHITENING_NONE`/`NICERF`, not Manchester) |
 
-- Region: US 900 MHz (65 channels, 902.2 MHz start, 400 kHz spacing)
-- Protocol: `RF_PROTOCOL_LEGACY` (forced)
-- Channel: Fixed (no hopping in Legacy)
-- Source: `freqplan.h:26-28`, `radiolib_extra.cpp:57`
+## 2. RX Decode Order (radiolib.cpp:1320-1475)
 
-## Frequency Hopping (RESOLVED — NOT PRESENT)
+```
+Air → FM demod → Manchester decode → [no inversion for Manchester]
+    → CRC-CCITT over payload → success
+```
 
-- No hopping in Legacy protocol
-- P3I uses fixed channel per `freqplan.h`
-- `nRF905_setFrequency()` called once per channel
+**CRITICAL**: The inversion step (`payload_type == RF_PAYLOAD_INVERTED ? ~val : val`)
+only happens in the `RF_WHITENING_NONE`/`RF_WHITENING_NICERF` path. For the
+**Legacy protocol (Manchester)**, there is **NO bit inversion**.
 
-## Packet Format (RESOLVED)
+## 3. CRC (lib_crc.cpp:183-204)
 
-- Preamble: 0x55, radio-generated (nRF905: 26×1 + 26×0)
-- Syncword: 8 bytes `55 99 A5 A9 55 66 65 96`
-- Payload: 24 bytes XXTEA-encrypted, MSB first
-- CRC: CCITT-F, poly 0x1021, seed 0xFFFF, pre-seeded with 3 bytes
-- Whitening: Manchester (each bit → 2 symbols)
-- Inversion: `RF_PAYLOAD_INVERTED` (bits inverted before air)
-- Source: `Legacy.cpp`, `Legacy.h`, `radiolib_extra.cpp`
+```c
+crc = 0xFFFF;                        // seed (CCITT_FFFF)
+crc = update_crc_ccitt(crc, 0x31);  // pre-seed (NRF905/FLARM address)
+crc = update_crc_ccitt(crc, 0xFA);
+crc = update_crc_ccitt(crc, 0xB6);
+// ... then over payload bytes (all but last 2)
+crc = update_crc_ccitt(crc, payload[i]);
+```
 
-## Validation Targets
+```c
+unsigned short update_crc_ccitt(unsigned short crc, char c) {
+  tmp = (crc >> 8) ^ (0xFF & c);
+  crc = (crc << 8) ^ crc_tabccitt[tmp];
+  return crc;
+}
+```
 
-- Ground-truth control sample: **NOT YET DECODED**
-- Blocker: Manchester whitening + payload inversion not applied in prototype
-- Next step: Update `prototype/decode.py` with correct demodulation order
+**CRC covers**: the `size - 4` bytes of the Manchester-decoded buffer (i.e., the
+raw payload minus the last 2 CRC bytes).
 
-## Unknowns (STILL OPEN)
+## 4. Packet Structure (legacy_v6_packet_t, Legacy.h:145-195)
 
-- **v6key**: 4-byte external key, source unknown
-- **TX power**: 10 dBm on nRF905, 0 dBm on CC1101
-- **Exact preamble on air**: nRF905 docs say 26×1 + 26×0, but actual RF capture may differ
-- **Frame timing**: No inter-frame spacing documented in firmware
+```c
+typedef struct {
+  // Word 0: 4 bytes (NOT encrypted)
+  unsigned int addr:24;
+  unsigned int type:4;          // 0 = Air V6 position
+  unsigned int addr_type:3;
+  unsigned int _unk1:1;
+  // Words 1-5: 20 bytes (encrypted with btea, 5 words)
+  int vs:10; unsigned int _unk2:2;
+  unsigned int airborne:1; unsigned int stealth:1;
+  unsigned int no_track:1; unsigned int parity:1;
+  unsigned int gps:12; unsigned int aircraft_type:4;
+  unsigned int lat:19; unsigned int alt:13;
+  unsigned int lon:20; unsigned int _unk3:10; unsigned int smult:2;
+  int8_t ns[4];
+  int8_t ew[4];
+} __attribute__((packed)) legacy_v6_packet_t;   // 24 bytes total
+```
 
----
+**Layout** (little-endian ARM):
+- Bytes 0-3: Word 0 = `addr` (24 bits, LSB) + `type` (4 bits, MSB of byte 3)
+  - `addr` = 24-bit LSB (bytes 0,1,2 + low 4 bits of byte 3)
+  - `type` = high 4 bits of byte 3 (bits 4-7)
+- Bytes 4-23: Words 1-5 (XXTEA-encrypted)
 
-## Discovery Log
+## 5. XXTEA Encryption (btea, Legacy.cpp:90-140)
 
-## Initial RF Capture
+```c
+#define DELTA 0x9e3779b9
+#define ROUNDS 6    // 6 rounds, NOT 32
+#define MX (((z >> 5 ^ y << 2) + (y >> 3 ^ z << 4)) ^ ((sum ^ y) + (key[(p & 3) ^ e] ^ z)))
 
-Capture validated.
+// encrypt:  btea((uint32_t*)pkt + 1, +5, key);   // 5 words at offset 1
+// decrypt:  btea((uint32_t*)pkt + 1, -5, key);   // 5 words at offset 1
+```
 
-Properties:
+**Key** (make_v6_key, Legacy.cpp:141-150):
+```c
+static const uint32_t table[12] = LEGACY_KEY1;   // 8 words
 
-- Float32 IQ
-- 20 MS/s
-- ~5.6 seconds
-- Observable RF bursts present
+void make_v6_key(uint32_t key[4], uint32_t timestamp, uint32_t address) {
+  for (i = 0; i < 4; i++) {
+    ndx = ((timestamp >> 23) & 1) ? i+4 : i;
+    key[i] = obscure(table[ndx] ^ ((timestamp >> 6) ^ address), LEGACY_KEY2) ^ LEGACY_KEY3;
+  }
+}
 
-Status:
+long obscure(uint32_t key, uint32_t seed) {
+  uint32_t m1 = seed * (key ^ (key >> 16));
+  uint32_t m2 = (seed * (m1 ^ (m1 >> 16)));
+  return m2 ^ (m2 >> 16);
+}
+```
 
-Suitable for decoder development.
+**Address** for key derivation: `(pkt->addr << 8) & 0xffffff` — the 24-bit addr
+shifted left by 8 (i.e., `addr * 256`) masked to 24 bits.
 
-## Firmware Source Analysis (2026-10-10)
+**Timestamp**: `(uint32_t) this_aircraft->timestamp` — Unix epoch seconds.
 
-Full analysis of `~/SoftRF-firmware` (commit 07e5e280, 2026-05-26).
+## 6. Manchester Encoding (OGN manchester.h)
 
-### Key Findings
+TX (encode, 1 bit → 2 symbols):
+```c
+0x01  0x02  0x04  0x08  0x10  0x20  0x40  0x80
+0x01  0x02  0x04  0x08  0x10  0x20  0x40  0x80
+0x80  0x40  0x20  0x10  0x08  0x04  0x02  0x01
+0x80  0x40  0x20  0x10  0x08  0x04  0x02  0x01
+```
 
-1. **Manchester whitening** is the root cause of decoding failures.
-   Each bit is expanded to 2 symbols via `ManchesterEncode[]` LUT.
-   This doubles the symbol rate to 200 kbps.
-   Previous prototype used 100 kbps directly — wrong.
+RX (decode, 2 symbols → 1 bit):
+```c
+00, 01, 01, 02, 01, 02, 02, 03,
+01, 02, 02, 03, 02, 03, 03, 04,
+01, 02, 02, 03, 02, 03, 03, 04,
+02, 03, 03, 04, 03, 04, 04, 05,
+01, 02, 02, 03, 02, 03, 03, 04,
+02, 03, 03, 04, 03, 04, 04, 05,
+02, 03, 03, 04, 03, 04, 04, 05,
+03, 04, 04, 05, 04, 05, 05, 06
+```
 
-2. **Payload inversion** (`RF_PAYLOAD_INVERTED`) means bits are
-   inverted before transmission. RX must invert after Manchester decode.
+The radio reads 2 bytes per data byte:
+- byte 1 → `val1 = ManchesterDecode[byte1]` (4-bit value, top nibble)
+- byte 2 → `val2 = ManchesterDecode[byte2]` (4-bit value, bottom nibble)
+- `data = (val1 << 4) | val2`
 
-3. **XXTEA key derivation** confirmed: `LEGACY_KEY1[8] ^ LEGACY_KEY2 ^ v6key`.
-   `LEGACY_KEY2 = 0x045d9f3b`.
-   `v6key` is external (unknown source).
+**To decode the air stream**: each 2 raw bits → 1 symbol (0 or 1), group into
+16 symbols per byte, look up the 2-byte pair in the decode table.
 
-4. **CRC pre-seed** = 3 bytes (`0x31, 0xFA, 0xB6`) to skip syncword
-   + first payload byte. CRC is computed over raw (unencrypted) payload.
+## 7. Complete RX Decode Pipeline (authoritative)
 
-5. **Coordinate base** = 40.0°N, 40.0°W. Degree × 10^7.
+```
+1. FM demodulate 2-FSK (915 MHz, 100 kbps, 50 kHz dev)
+2. Manchester decode (16 symbols/byte → 1 data byte)
+3. [NO inversion for Manchester]
+4. Find syncword: 55 99 A5 A9 55 66 65 96
+5. Extract 24-byte payload after syncword
+6. CRC-CCITT:
+   - crc = 0xFFFF
+   - crc = update(crc, 0x31); update(crc, 0xFA); update(crc, 0xB6)
+   - crc = update(crc, payload[i]) for i in 0..21 (22 bytes)
+   - Compare: payload[22] == crc>>8, payload[23] == crc&0xFF
+7. If CRC OK:
+   - addr = (payload[0] | payload[1]<<8 | payload[2]<<16) & 0xFFFFFF
+   - type = (payload[3] >> 4) & 0x0F
+   - If type != 0: not Air V6 position
+   - btea((uint32_t*)payload + 1, -5, key)   // decrypt 5 words at offset 1
+   - Verify parity
+   - Extract lat/lon/alt/speed/course from words 1-5
+```
 
-6. **US channel plan**: 65 channels, 902.2 MHz start, 400 kHz spacing.
-   Legacy uses fixed channel (no hopping).
+## 8. Known Correct Constants
 
-7. **nRF905 vs CC1101**: nRF905 adds hardware preamble (26×1+26×0)
-   and hardware CRC. CC1101 path uses software preamble and CRC.
+| Constant | Value |
+|----------|-------|
+| `LEGACY_SYNCWORD` | `55 99 A5 A9 55 66 65 96` |
+| `LEGACY_PAYLOAD_SIZE` | 24 |
+| `LEGACY_KEY1` | `0xe43276df 0xdca83759 0x9802b8ac 0x4675a56b 0xfc78ea65 0x804b90ea 0xb76542cd 0x329dfa32` |
+| `LEGACY_KEY2` | `0x045d9f3b` |
+| `LEGACY_KEY3` | `0x87b562f4` |
+| `LEGACY_KEY4` | `0x956F6C77` |
+| `LEGACY_KEY5` | `0xA5F9B21C 0xAB3F9D12 0xC6F34E34 0xD72FA378` |
+| `DELTA` | `0x9e3779b9` |
+| `ROUNDS` | 6 |
+| CRC poly | `0x1021` |
+| CRC init | `0xFFFF` |
+| CRC pre-seed | `0x31 0xFA 0xB6` |
 
-### Files Analyzed
+## 9. Open Questions / TODO
 
-| File | Lines | Content |
-|------|-------|---------|
-| `Legacy.cpp` | 1-225 | Proto desc, key derivation, encode/decode, XXTEA |
-| `Legacy.h` | 1-128 | Proto config, ManchesterEncode[], payload struct |
-| `radiolib_extra.cpp` | 599-900 | Legacy init, TX/RX, CC1101 setup |
-| `radiolib_extra.cpp` | 1500-1570 | Legacy TX/RX with Manchester + CRC |
-| `nordic.cpp` | 126-500 | nRF905 setup, TX, RX, bit order |
-| `P3I.cpp` | 495-740 | P3I TX (Legacy), RX, CRC, Manchester |
-| `freqplan.h` | 1-100 | US channel plan, freq selection |
-| `freqplan.cpp` | 1-245 | Channel selection, frequency calc |
-| `nRF905.h` | 1-300 | nRF905 API, CRC config, TX power |
-| `P3I.h` | 1-200 | P3I protocol desc, proto_desc struct |
-
-### Status
-
-Decoding blocked on: applying correct demodulation order in prototype.
-Next: update `prototype/decode.py` with Manchester + inversion support.
-
----
-
-## Known Protocol Information (VERIFIED)
-
-Legacy:
-- 2-FSK (GFSK)
-- 100 kbps data rate
-- 50 kHz frequency deviation (±50 kHz)
-- BT = 0.5 (Gaussian filter)
-- Manchester whitening (200 kbps symbol rate on air)
-- Payload inversion (MSB first, inverted before air)
-- 8-byte syncword: `55 99 A5 A9 55 66 65 96`
-- 24-byte XXTEA-encrypted payload
-- 2-byte CRC-16 (CCITT-F, poly 0x1021, seed 0xFFFF)
-- Preamble: 0x55, radio-generated
-- RX bandwidth: SS (125 kHz)
-- Coordinate base: 40.0°N, 40.0°W
-- US channels: 65, 902.2 MHz start, 400 kHz spacing
-
-Full details with citations: see `NOTES.md` (Section 1)
-and `SYSTEM_FACTS.md` (Verified Protocol Facts).
-
-Source: `~/SoftRF-firmware` commit 07e5e280
+- [ ] Confirm exact bit ordering in Manchester decode (MSB-first vs LSB-first)
+- [ ] Confirm whether `addr << 8` in key derivation is correct (vs. just `addr`)
+- [ ] Test decoder against captured WAV
+- [ ] Verify CRC pre-seed interpretation (skip 8-byte syncword + first payload byte)
+- [ ] Check if the `LEGACY_PREAMBLE_SIZE = 1` means 1 byte of `0x55` before syncword
