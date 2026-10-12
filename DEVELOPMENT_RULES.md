@@ -297,3 +297,36 @@ Evidence:
 
 Status:
 HYPOTHESIS
+
+
+# Capture Replacement Rules
+
+The control capture is the canonical regression artifact.
+
+The control capture shall be assumed usable until evidence demonstrates otherwise.
+
+The following are insufficient grounds to reject the capture:
+
+- Decoder failure
+- CRC failure
+- Missing frame sync
+- Unexpected modulation characteristics
+- Failure to recover telemetry
+
+Before declaring a capture unusable, the following report is required:
+
+CAPTURE_CONFIDENCE_REPORT.md
+
+Contents:
+
+- IQ format validation
+- Sample rate validation
+- Burst inventory
+- Burst frequencies
+- Burst durations
+- Estimated SNR
+- Occupied bandwidth
+- Modulation analysis
+- Alternative explanations considered
+
+Only after this report exists may the capture be declared unsuitable.
