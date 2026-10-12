@@ -215,7 +215,7 @@ Coordinate base: **40.0°N, 40.0°W**. Source: `Legacy.cpp:221`
 ## Known Limitations & Unknowns
 
 - **v6key**: External 4-byte key, source unknown (likely from system config or hardcoded elsewhere)
-- **Frequency hopping**: Not present in Legacy (P3I uses fixed channel)
+- **Frequency hopping**: Present in Legacy (FHSS across 65 US channels, 902.2-927.8 MHz, 400 kHz spacing) [FIRMWARE VERIFIED]
 - **Receiver bit order**: nRF905 receives MSB first; software decodes directly
 - **Exact preamble length on air**: nRF905 generates 26×1 + 26×0 preamble (documented in `nRF905.h:228`)
 

@@ -318,7 +318,8 @@ lat = 40.0 + (2500000 / 10^7) = 40.25°
 - **Start**: 902.2 MHz
 - **Spacing**: 400 kHz
 - **Count**: 65 channels
-- **Range**: 902.2 MHz to 925.8 MHz
+- **Range**: 902.2 MHz to 927.8 MHz (25.6 MHz total)
+- **Center**: 915.0 MHz (channel 32)
 - **Source**: `freqplan.h:110-112`
   ```
   #define US_CH_902        (uint8_t)(65)
@@ -331,6 +332,7 @@ lat = 40.0 + (2500000 / 10^7) = 40.25°
 - **Center frequency**: 915.0 MHz (from filename `baseband_915000000Hz`)
 - **Channel 32**: 915.0 MHz (offset 0.0 MHz)
 - **Channel 52**: 923.0 MHz (offset +8.0 MHz) — **strongest response in scan**
+- **Note**: The signal is **frequency hopping** across the 65-channel plan. The capture center is 915.0 MHz, but the signal may be on any channel within the 902.2-927.8 MHz range at any given time.
 
 ### 7.3 Channel Calculation
 
@@ -343,7 +345,9 @@ channel = floor((frequency - 902.2 MHz) / 0.4 MHz)
 | 0 | 902.2 MHz | -12.8 MHz |
 | 32 | 915.0 MHz | 0.0 MHz |
 | 52 | 923.0 MHz | +8.0 MHz |
-| 64 | 925.8 MHz | +10.8 MHz |
+| 64 | 927.8 MHz | +12.8 MHz |
+
+**Note**: The full range is 902.2-927.8 MHz (25.6 MHz total), not 902.2-925.8 MHz as previously documented.
 
 ---
 
@@ -360,9 +364,11 @@ Append CRC (computed over syncword + encrypted data, with pre-seed 0x31, 0xFA, 0
     ↓
 Manchester encode (each bit → 2 symbols)
     ↓
-2-FSK modulate (100 kbps → 200 kbps symbol rate, ±50 kHz deviation, BT=0.5)
+2-FSK modulate (100 kbps → 200 kbps symbol rate, ±14 kHz deviation [observed], BT=0.5)
     ↓
-RF transmit at 915 MHz (or other US channel)
+Frequency hop to next channel (65-channel US plan, 902.2-927.8 MHz)
+    ↓
+RF transmit at current channel frequency
 ```
 
 ### 8.1 nRF905 Driver Details
@@ -381,7 +387,9 @@ RF transmit at 915 MHz (or other US channel)
 - **File**: `radiolib_extra.cpp` — `cc1101_setup()`
 - **CRC**: `setCrcFiltering(0)` — hardware CRC is **disabled**
 - **Bit rate**: `setBitrate(100000)` — 100 kbps
-- **Deviation**: `setFrequencyDeviation(50000)` — ±50 kHz
+- **Deviation**: `setFrequencyDeviation(50000)` — ±50 kHz [FIRMWARE SPEC]
+  - **Observed deviation**: ~14 kHz [RF VERIFIED]
+  - **Note**: The observed deviation is significantly lower than the firmware spec. This may be due to capture limitations, signal attenuation, or a different configuration.
 - **Whitening**: Handled in software (Manchester encode before `setTxData`)
 - **Source**: `radiolib_extra.cpp:774-776, 820-823`
 
@@ -391,16 +399,20 @@ RF transmit at 915 MHz (or other US channel)
 
 To decode the captured signal, the following steps are required **in order**:
 
-1. **Downconvert** to baseband (remove 915 MHz carrier)
-2. **Low-pass filter** to ~250 kHz (covers ±200 kbps symbol rate + guard)
-3. **FM demodulate** (quadrature discriminator or log-ratio)
-4. **Resample** to 200 kbps symbol rate (2 samples per symbol minimum)
-5. **Manchester decode**: Each 2-symbol pair → 1 data bit
+1. **Channel tracking**: Identify the current channel (902.2-927.8 MHz, 65 channels, 400 kHz spacing)
+2. **Downconvert** to baseband (remove current channel carrier)
+3. **Low-pass filter** to ~250 kHz (covers ±200 kbps symbol rate + guard)
+4. **FM demodulate** (quadrature discriminator or log-ratio)
+5. **Resample** to 200 kbps symbol rate (2 samples per symbol minimum)
+6. **Manchester decode**: Each 2-symbol pair → 1 data bit
    - Symbols `10` → data bit `1`
    - Symbols `01` → data bit `0`
    - (Assuming standard Manchester; may need to try both polarities)
-6. **De-invert** bits (if payload_inverted = true)
-7. **Sync**: Find the 64-bit syncword `55 99 A5 A9 55 66 65 96`
+7. **Threshold**: Apply natural threshold (-1.0 kHz) to extract bits from FSK tones
+   - -15.0 kHz → bit 0
+   - +13.0 kHz → bit 1
+8. **De-invert** bits (if payload_inverted = true)
+9. **Sync**: Find the 64-bit syncword `55 99 A5 A9 55 66 65 96`
 8. **Extract** 24 bytes of encrypted payload
 9. **Verify CRC**: Compute CCITT-F with pre-seed (0x31, 0xFA, 0xB6) over syncword + encrypted data, compare with the 2 trailing CRC bytes
 10. **Decrypt**: XXTEA decrypt with derived key (needs time + address)
