@@ -158,21 +158,86 @@ def crc16_ccitt_f(data, pre_seed=None):
 
 
 def btea_decrypt(data, key):
+    """
+    XXTEA decrypt per firmware (Legacy.cpp:89-140).
+    
+    Firmware: btea((uint32_t*)pkt + 1, -5, key)
+    - 5 words (20 bytes) at offset 1 (bytes 4-23)
+    - 6 rounds
+    - 4-word key
+    
+    The MX formula in firmware:
+    MX = (((z >> 5 ^ y << 2) + (y >> 3 ^ z << 4)) ^ ((sum ^ y) + (key[(p & 3) ^ e] ^ z)))
+    """
     DELTA = 0x9E3779B9
-    rounds = 32
-    v = list(struct.unpack('<4I', data[:16]))
+    ROUNDS = 6  # Firmware: #define ROUNDS 6
+    n = 5       # Firmware: btea(..., -5, key)
+    
+    # Extract 5 words from data (little-endian ARM)
+    v = [struct.unpack_from('<I', data, i*4)[0] for i in range(n)]
     k = list(struct.unpack('<4I', key[:16]))
-    q = rounds
-    s = (DELTA * q) & 0xFFFFFFFF
-    while q:
-        s = (s - DELTA) & 0xFFFFFFFF
-        e = (s >> 2) & 3
-        for i in range(3, -1, -1):
-            jj = (i + 1) % 4
-            kk = i % 4
-            v[i] = (v[i] - ((((v[jj] >> 5) ^ ((i + v[jj]) >> 2)) ^ v[i]) + ((v[(i+3)%4] >> 5) ^ (s >> 2)) + k[kk] + (v[kk] >> 5))) & 0xFFFFFFFF
-        q = q - 1
-    return struct.pack('<4I', *v)
+    
+    # Decrypt
+    rounds = ROUNDS
+    sum_val = (rounds * DELTA) & 0xFFFFFFFF
+    y = v[0]
+    for _ in range(rounds):
+        e = (sum_val >> 2) & 3
+        for p in range(n - 1, 0, -1):
+            z = v[p - 1]
+            mx = (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum_val ^ y) + (k[(p & 3) ^ e] ^ z))
+            v[p] = (v[p] - mx) & 0xFFFFFFFF
+            y = v[p]
+        z = v[n - 1]
+        mx = (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum_val ^ y) + (k[(0 & 3) ^ e] ^ z))
+        v[0] = (v[0] - mx) & 0xFFFFFFFF
+        y = v[0]
+        sum_val = (sum_val - DELTA) & 0xFFFFFFFF
+    
+    # Pack back
+    result = bytearray()
+    for i in range(n):
+        result.extend(struct.pack('<I', v[i]))
+    return bytes(result)
+
+
+def btea_encrypt(data, key):
+    """
+    XXTEA encrypt per firmware (Legacy.cpp:89-140).
+    
+    Firmware: btea((uint32_t*)pkt + 1, 5, key)
+    - 5 words (20 bytes) at offset 1 (bytes 4-23)
+    - 6 rounds
+    - 4-word key
+    """
+    DELTA = 0x9E3779B9
+    ROUNDS = 6
+    n = 5
+    
+    v = [struct.unpack_from('<I', data, i*4)[0] for i in range(n)]
+    k = list(struct.unpack('<4I', key[:16]))
+    
+    # Encrypt
+    rounds = ROUNDS
+    sum_val = 0
+    z = v[n - 1]
+    for _ in range(rounds):
+        sum_val = (sum_val + DELTA) & 0xFFFFFFFF
+        e = (sum_val >> 2) & 3
+        for p in range(n - 1):
+            y = v[p + 1]
+            mx = (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum_val ^ y) + (k[(p & 3) ^ e] ^ z))
+            v[p] = (v[p] + mx) & 0xFFFFFFFF
+            z = v[p]
+        y = v[0]
+        mx = (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum_val ^ y) + (k[(0 & 3) ^ e] ^ z))
+        v[n - 1] = (v[n - 1] + mx) & 0xFFFFFFFF
+        z = v[n - 1]
+    
+    result = bytearray()
+    for i in range(n):
+        result.extend(struct.pack('<I', v[i]))
+    return bytes(result)
 
 
 def main():
@@ -240,13 +305,18 @@ def main():
             print(f"  CRC: stored={crc_stored:04x}, calc={crc_calc:04x}, match={crc_stored==crc_calc}")
             if crc_stored == crc_calc:
                 print("  *** CRC VERIFIED ***")
-                decrypted = btea_decrypt(raw_payload, LEGACY_KEY)
-                print(f"  Decrypted: {' '.join(f'{b:02x}' for b in decrypted)}")
-                text = bytes(b for b in decrypted if 32 <= b < 127).decode('ascii', errors='ignore')
+                # Firmware: btea at offset 1, 5 words, 6 rounds
+                key4 = LEGACY_KEY[:16]
+                encrypted_20 = raw_payload[:20]  # 20 bytes (5 words)
+                decrypted_20 = btea_decrypt(encrypted_20, key4)
+                print(f"  Decrypted (20 bytes): {decrypted_20.hex()}")
+                text = bytes(b for b in decrypted_20 if 32 <= b < 127).decode('ascii', errors='ignore')
                 if len(text) > 3:
                     print(f"  ASCII: {text}")
+                return
+            
             return
-
+        
     print(f"\n  No syncword found.")
 
     # Try with swapped tones
