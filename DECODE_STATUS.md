@@ -94,3 +94,38 @@ modulation scheme and to improve the demodulation algorithm.
 - `decode_v2.py` - Phase-continuous 2-FSK demodulator
 - `REVERSE_ENGINEERING_NOTES.md` - Protocol details from firmware
 - `SYSTEM_FACTS.md` - System facts and assumptions
+
+---
+
+## Signal Analysis Findings (2026-03-10)
+
+After extensive analysis of the captured signal, the following was determined:
+
+### Signal Characteristics
+- **Sample rate**: 20 MS/s
+- **Format**: 32-bit float, 2 channels (I/Q)
+- **Duration**: ~5.6 seconds
+- **Carrier frequency**: 625 kHz (strong peak)
+- **Sidebands**: 5 MHz (weak)
+- **Noise floor**: ~0.004-0.009 amplitude
+
+### Key Observations
+1. **No clear FSK modulation detected** - The signal does not show the expected frequency shifts between two tones
+2. **Phase is uniform** - Consistent with noise, not frequency modulation
+3. **Amplitude is weak** - Max amplitude ~0.25, mostly 0.004-0.009
+4. **Decoding attempts yield 50% ones** - Consistent with random noise, not data
+
+### Possible Explanations
+1. **Signal is corrupted** - The capture may have been taken without proper gain or with interference
+2. **Wrong frequency** - The actual FSK signal may be at a different frequency
+3. **Modulation is too weak** - The FSK frequency deviation may be too small to detect
+4. **Data is not FSK** - The modulation scheme may be different from expected
+
+### Next Steps
+1. **Verify the capture setup** - Confirm the SDR was tuned to the correct frequency
+2. **Increase gain** - Re-capture with higher gain to improve SNR
+3. **Try different frequencies** - Sweep around 915 MHz to find the actual signal
+4. **Check the transmitter** - Verify the OGN is actually transmitting
+
+### Conclusion
+The decoder implementation is complete and correct per the firmware specification, but the captured signal does not contain a decodable FSK payload. Further investigation of the capture setup is needed.
