@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 """
+# [!!!] THIS SCRIPT IS OBSOLETE — FSK HYPOTHESIS DISPROVEN
+#
+# This script was written for the 2-FSK hypothesis, which has been
+# DISPROVEN. See FSK_HYPOTHESIS_DISPROVEN.md for details.
+#
+# The signal is OOK/ASK, not FSK. Use OOK_Demodulator_v1.py instead.
+#
 SoftRF FHSS-FSK demodulator with per-hop frequency tracking.
 
 Strategy:

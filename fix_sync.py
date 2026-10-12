@@ -14,6 +14,13 @@ Let me:
 2. Manchester-decode pairs of bits into nibbles
 3. Build bytes and look for sync word
 """
+# [!!!] THIS SCRIPT IS OBSOLETE — FSK HYPOTHESIS DISPROVEN
+#
+# This script was written for the 2-FSK hypothesis, which has been
+# DISPROVEN. See FSK_HYPOTHESIS_DISPROVEN.md for details.
+#
+# The signal is OOK/ASK, not FSK. Use OOK_Demodulator_v1.py instead.
+#
 import numpy as np
 from scipy.signal import find_peaks
 import struct
