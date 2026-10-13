@@ -69,3 +69,20 @@ ROUNDS = 6
 - `measure_symbols.py` — Symbol rate measurement
 - `extract_bitstream.py` — Bitstream extraction
 - `ANALYSIS_INVALID_CAPTURE.md` — **SUPERSEDED** — prior "capture is invalid" conclusion
+
+## 2026-10-13: OOK/ASK Decode Attempt
+
+**Result:** Signal present but SNR too low for basic OOK demodulation.
+
+**Key findings:**
+- 10% duty cycle confirmed (8.5% within 100ms windows)
+- Signal at 0.05 level, noise at 0.03 level (SNR=1.67)
+- 100+ sub-bursts of 30-32ms per 100ms window
+- Basic OOK at 769 ksym/s: 25,089 symbols, 136 "1" bits, no sync word
+
+**Next steps:**
+- Matched filtering or coherent detection needed
+- Average multiple bursts to improve SNR
+- Use carrier frequency for better SNR
+
+**Files:** `OOK_DECODE_ATTEMPT.md`, `OOK_decoder_v3.py`
