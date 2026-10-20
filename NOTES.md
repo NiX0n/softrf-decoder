@@ -1,5 +1,10 @@
 # SoftRF Decoder — Research & Documentation
 
+> **CORRECTION (2026-10-20)**: The SoftRF Legacy firmware spec documented in this
+> file IS the applicable protocol for the captured signal. The prior "signal is
+> OOK/ASK, not SoftRF" conclusion was based on a wrong frequency offset. See
+> `SESSION_REPORT_2026-10-20.md`.
+>
 > **Status**: Active. All findings below are from direct reading of the SoftRF firmware
 > source code (cloned from https://github.com/lyusupov/SoftRF, commit `973a8d73`, branch `master`).
 > The firmware source is **not** a dependency and is **not** committed to this repository.

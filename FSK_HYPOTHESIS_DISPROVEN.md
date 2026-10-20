@@ -1,7 +1,14 @@
 # FSK Hypothesis — DISPROVEN
 
 **Date:** 2026-10-12
-**Status:** **DISPROVEN**
+**Status:** ~~DISPROVEN~~ → **SUPERSEDED (2026-10-20)**
+
+> ⚠️ **CORRECTION (2026-10-20)**: The conclusion in this document was based on an
+> **incorrect frequency offset estimate** (+11.23 MHz instead of -8.733 MHz). With the
+> corrected carrier removal, the signal shows **constant amplitude** (std/mean = 0.144),
+> which is **consistent with FSK** and **inconsistent with OOK/ASK**. See
+> `SESSION_REPORT_2026-10-20.md` for the full correction. The FSK hypothesis is
+> **REOPENED**.
 
 ## What Was Assumed
 

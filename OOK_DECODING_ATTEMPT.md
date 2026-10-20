@@ -1,6 +1,12 @@
 # OOK/ASK Decoding Attempt
 
 **Date**: 2026-10-13
+**Status**: ~~BLOCKED~~ → **SUPERSEDED (2026-10-20)**
+
+> ⚠️ **CORRECTION (2026-10-20)**: The OOK/ASK classification was based on an
+> incorrect frequency offset estimate. With the corrected carrier removal (-8.733 MHz),
+> the signal shows **constant amplitude** (std/mean = 0.144), which is **inconsistent
+> with OOK/ASK**. The FSK hypothesis is **REOPENED**. See `SESSION_REPORT_2026-10-20.md`.
 
 ## Findings
 

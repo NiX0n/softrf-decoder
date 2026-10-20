@@ -1,6 +1,7 @@
 # RESUME FROM SCRATCH — Complete Starting Guide
 
 **Last updated:** 2026-10-12
+**CORRECTED:** 2026-10-20 — see `SESSION_REPORT_2026-10-20.md` for the corrected FSK interpretation.
 **Purpose:** Given this repository alone, be able to pick up where we left off.
 
 ---

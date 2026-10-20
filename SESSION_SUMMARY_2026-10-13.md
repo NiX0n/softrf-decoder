@@ -1,5 +1,13 @@
 # R&D Session Summary - 2026-10-13
 
+> **⚠️ SUPERSEDED 2026-10-20:** The "2-FSK hypothesis DISPROVEN" conclusion in this
+> document was based on an incorrect frequency offset estimate. With the corrected
+> carrier removal (-8.733 MHz), the signal shows constant amplitude (std/mean = 0.144),
+> which **rejects OOK/ASK** and is consistent with FSK. The SoftRF Legacy protocol
+> (2-FSK, 100 kbps, XXTEA, CCITT) is the most likely candidate again.
+>
+> See `SESSION_REPORT_2026-10-20.md` for the full corrected analysis.
+
 ## Mission
 Decode the SoftRF 915 MHz signal and produce a working decoder + reverse-engineering docs.
 

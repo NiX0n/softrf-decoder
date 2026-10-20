@@ -1,33 +1,47 @@
 # Quick Reference Card - SoftRF 915 MHz Decoder
 
-## What We Know
-- **Modulation**: OOK/ASK (NOT FSK)
-- **Frequency**: 915.000 MHz
-- **Sample rate**: 20 MS/s
-- **Burst pattern**: 100ms windows, ~8.5% duty cycle
-- **SNR**: Poor (can't decode reliably)
+**Last Updated: 2026-10-20 (CRITICAL CORRECTION)**
+
+## What We Know (CORRECTED)
+
+| Parameter | Value | Confidence |
+|-----------|-------|------------|
+| **Modulation** | **FSK (most likely)** | HIGH — constant amplitude after carrier removal |
+| ~~OOK/ASK~~ | ~~"Confirmed"~~ | **REJECTED** — 14.4% amplitude variation (too low for OOK) |
+| **Frequency** | 915.000 MHz | HIGH |
+| **Carrier offset** | **-8.733 MHz** (corrected from +11.23 MHz) | HIGH |
+| **Residual freq offset** | -47.3 kHz | HIGH |
+| **Sample rate** | 20 MS/s | HIGH |
+| **Burst count** | 79 regions in 30.4s | HIGH |
+| **Burst duration** | ~5.3 ms | HIGH |
+| **Burst SNR** | ~29.1 dB | MEDIUM (better than previously estimated 13.3 dB) |
+| **Protocol** | Possibly SoftRF Legacy (2-FSK, 100 kbps, XXTEA, CCITT) | MEDIUM — consistent with firmware |
 
 ## What We DON'T Know
-- Symbol rate
-- Bitstream content
-- Why 26.12 kHz spectral width
+- Exact symbol rate (after carrier correction)
+- Bitstream content (FSK demodulation not yet attempted with corrected offset)
+- Frame structure
+- Whether it's SoftRF Legacy or different protocol
 
 ## Key Files
-- **Read first**: `HANDOFF.md`, `RESUME_FROM_SCRATCH.md`
-- **Why FSK was rejected**: `FSK_HYPOTHESIS_DISPROVEN.md`
-- **OOK attempt**: `OOK_DECODING_ATTEMPT.md`
-- **Session log**: `SESSION_SUMMARY_2026-10-13.md`
+- **Read first**: `SESSION_REPORT_2026-10-20.md` (CRITICAL CORRECTION)
+- **Protocol spec**: `REVERSE_ENGINEERING_NOTES.md` (FSK, XXTEA, CCITT — still valid)
+- **Session history**: `SESSION_SUMMARY_2026-10-13.md` (partially superseded)
+- **Why FSK was (wrongly) rejected**: `FSK_HYPOTHESIS_DISPROVEN.md` (SUPERSEDED)
+- **OOK attempt**: `OOK_DECODING_ATTEMPT.md` (SUPERSEDED)
 
 ## Valid Scripts
 - `characterize.py` - spectral analysis
 - `COHERENT_demod.py` - coherent demodulation
-- `OOK_decoder_v3.py` - OOK decoder
+- `softrf_decoder.py` - FSK decoder (RE-EXAMINE with corrected offset)
 
-## OBSOLETE Scripts
-- `fsk_demod.py`, `demodulate_hops.py`, `fft_analysis.py`, `fix_sync.py`
+## SUPERSEDED Scripts
+- `OOK_decoder_v2.py`, `OOK_decoder_v3.py` - OOK (rejected hypothesis)
 
 ## Next Step
-**Capture a better signal** (higher SNR), then retry OOK/ASK decoding.
+**Apply FM demodulation with corrected carrier offset (-8.733 MHz)** and search for
+the SoftRF Legacy sync word: `55 99 A5 A9 55 66 65 96`.
 
 ## Status
-**BLOCKED**: Signal present but SNR too low.
+**REOPENED**: FSK hypothesis is back in play. SNR ~29 dB is sufficient for decoding.
+The SoftRF Legacy protocol (2-FSK, 100 kbps, XXTEA, CCITT) is the most likely candidate.

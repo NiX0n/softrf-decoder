@@ -2,6 +2,11 @@
 
 Decoder for SoftRF 915 MHz radio protocol (EasyLink-compatible).
 
+> **CORRECTION (2026-10-20):** The signal in the capture IS the SoftRF Legacy
+\u003> protocol (2-FSK, 100 kbps, XXTEA, CCITT). The prior "signal is OOK/ASK, not
+\u003> SoftRF" conclusion was based on a wrong frequency offset. See
+\u003> `SESSION_REPORT_2026-10-20.md` for the full corrected analysis.
+
 ## Documentation
 
 - **`NOTES.md`** — full protocol research with verified firmware citations and GitHub links

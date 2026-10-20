@@ -1,5 +1,12 @@
 # FINAL SESSION REPORT — 2026-10-13 (UPDATED)
 
+> **⚠️ SUPERSEDED 2026-10-20:** The "modulation confirmed as OOK/ASK" conclusion was
+> based on a wrong frequency offset estimate. With the corrected carrier removal
+> (-8.733 MHz), the signal shows constant amplitude — it is **FSK**, not OOK/ASK.
+\u003> SNR is ~29.1 dB (sufficient for FSK decoding). The SoftRF Legacy protocol
+\u003> (2-FSK, 100 kbps, XXTEA, CCITT) is the most likely candidate.
+> See `SESSION_REPORT_2026-10-20.md` for the full corrected analysis.
+
 ## Executive Summary
 
 **Status:** PARTIAL SUCCESS — Signal characterized, modulation confirmed as OOK/ASK, burst structure identified. Decoding still blocked by SNR, but we now have a clear path forward.

@@ -1,5 +1,9 @@
 # BURST ANALYSIS — 2026-10-13
 
+> **⚠️ NOTE (2026-10-20):** Burst detection results in this document remain valid.
+\u003> The OOK/ASK amplitude-based classification was later rejected — see
+\u003> `SESSION_REPORT_2026-10-20.md` for the corrected FSK interpretation.
+
 ## Critical Discovery: Noise-Subtracted Burst Detection
 
 ### Method

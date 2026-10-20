@@ -1,7 +1,7 @@
 # OOK/ASK Decode Attempt
 
 **Date:** 2026-10-13
-**Status:** IN PROGRESS - Signal present but SNR too low for basic OOK demodulation
+**Status:** ❌ **SUPERSEDED** (2026-10-20) — OOK/ASK hypothesis rejected; signal is FSK. See SESSION_REPORT_2026-10-20.md
 
 ## Signal Characteristics
 

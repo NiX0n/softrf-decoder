@@ -4,6 +4,11 @@
 **Analyst:** Assistant
 **Status:** ❌ **SUPERSEDED** — See CRITICAL_FINDINGS_2026-10-12.md
 
+> **CORRECTION (2026-10-20):** This document is fully superseded. The "signal is OOK/ASK"
+> conclusion was based on a wrong frequency offset estimate. With the corrected carrier
+\u003> removal (-8.733 MHz), the signal shows constant amplitude — it is **FSK**, not OOK/ASK.
+\u003> See `SESSION_REPORT_2026-10-20.md`.
+
 > **IMPORTANT:** This analysis was based on the incorrect assumption that the SoftRF
 > legacy protocol uses 2-FSK modulation. The signal in the capture is VALID but is
 > OOK/ASK at ~769 ksym/s, not 2-FSK at 100 kbps. The "invalid capture" conclusion

@@ -1,7 +1,13 @@
 # CRITICAL FINDINGS — 2026-10-12
 
-> **This document supersedes all prior "capture is invalid" conclusions.**
-> **The capture is VALID. The signal is real. It is NOT the SoftRF legacy protocol.**
+> ⚠️ **PARTIALLY SUPERSEDED (2026-10-20)**: The OOK/ASK conclusion in this document
+> was based on an incorrect frequency offset estimate (+11.23 MHz instead of -8.733 MHz).
+> With the corrected carrier removal, the signal shows **constant amplitude** (std/mean = 0.144)
+> which is **consistent with FSK** and **inconsistent with OOK/ASK**.
+> See `SESSION_REPORT_2026-10-20.md` for the full correction.
+>
+> **The capture is VALID.** The signal is real. The modulation classification
+> (OOK/ASK) is **REJECTED** — the signal is most likely **FSK**.
 
 ## 1. Verified Signal Characteristics
 

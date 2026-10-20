@@ -1,60 +1,58 @@
 # Decode Status
 
-**Last updated:** 2026-10-12
+> **⚠️ CORRECTED 2026-10-20:** The OOK/ASK classification below was based on an
+> incorrect frequency offset estimate. With the corrected carrier removal
+> (-8.733 MHz), the signal shows constant amplitude (std/mean = 0.144), which
+> **rejects OOK/ASK** and is consistent with FSK. The SNR is ~29 dB, not
+> "limited". See `SESSION_REPORT_2026-10-20.md` for the full analysis.
+
+**Last updated:** 2026-10-20 (CORRECTED)
 
 ## Summary
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Modulation | ✅ Known | OOK/ASK (NOT 2-FSK) — see CRITICAL_FINDINGS |
-| Symbol rate | ✅ Known | ~769 ksym/s (NOT 100 kbps) |
-| Carrier offset | ⚠ PARTIAL | ~-0.779 MHz (could be receiver tuning artifact) |
-| Phase | ✅ Known | Coherent (-55° to -60°) |
-| Bursts | ✅ Known | 12 real bursts, 5.14 ms each |
-| Syncword | ❌ UNKNOWN | Not yet identified (current syncword is for 2-FSK) |
-| Payload structure | ❌ UNKNOWN | Not yet identified |
-| CRC | ❌ UNKNOWN | Not yet identified |
-| Encryption | ❌ UNKNOWN | Not yet identified |
-| WAV capture | ✅ VALID | Supersedes prior "INVALID" conclusion |
-| Decode | ❌ NOT STARTED | Need to identify protocol first |
+| Modulation | ✅ KNOWN (corrected) | **FSK** (NOT OOK/ASK — constant amplitude after carrier removal) |
+| Carrier offset | ✅ Known | **-8.733 MHz** (corrected from prior estimates) |
+| Residual offset | ⚠ Measured | -47.3 kHz (consistent with FSK) |
+| Bursts | ✅ Known | 79 regions, ~5.3 ms each |
+| SNR | ✅ KNOWN (corrected) | **~29.1 dB** — sufficient for decoding |
+| Protocol | 🔄 CANDIDATE | SoftRF Legacy (2-FSK, 100 kbps, XXTEA, CCITT) |
+| Syncword | ❌ NOT SEARCHED | `55 99 A5 A9 55 66 65 96` (candidate, not yet verified) |
+| WAV capture | ✅ VALID | 30.4s, 79 burst regions |
+| Decode | 🔄 IN PROGRESS | FSK demodulation with corrected offset — next step |
 
-## Key Finding (2026-10-12)
+## Corrected Findings (2026-10-20)
 
-**The captured signal is OOK/ASK at ~769 ksym/s. This is NOT the SoftRF legacy protocol.**
+1. **Frequency offset was wrong.** Prior analyses estimated +11.23 MHz or
+   -0.779 MHz. The actual dominant component is **-8.733 MHz** (with a second
+   strong component at -8.833 MHz).
+2. **Amplitude is constant after carrier removal.** std/mean = 0.144 (mean
+   magnitude 1.225065, std 0.176278). OOK/ASK requires large amplitude
+   variation between symbols — it is **rejected**.
+3. **Two-component spectrum** at -8.733 / -8.833 MHz is consistent with FSK
+   frequency deviation (two frequency states).
+4. **Residual phase rotation** after carrier removal averages -47.3 kHz
+   rotation — consistent with FSK, not a stationary carrier.
 
-The prior "capture is invalid" conclusion was wrong. The capture is valid, but the signal is a different protocol than the one we were trying to decode.
+## Next Steps (corrected)
 
-### What We Know
-- 12 real bursts, 5.14 ms each
-- OOK/ASK modulation (two-level amplitude)
-- Coherent phase (-55° to -60°)
-- Carrier offset ~-0.779 MHz
-- Symbol rate ~769 ksym/s
-
-### What We Don't Know
-- What protocol this is
-- What the syncword is
-- What the payload structure is
-- Whether it's encrypted
-- What the carrier offset means (signal characteristic vs receiver artifact)
-
-## Next Steps
-
-1. **Verify the receiver setup** — What IF/center frequency was used?
-2. **Check if SoftRF has other protocol variants** — Search the firmware source
-3. **Search for OOK/ASK protocols at ~769 ksym/s** in the 915 MHz band
-4. **Build a new decoder** for OOK/ASK at ~769 ksym/s
-5. **Identify the protocol** — Cross-reference with known protocols
+1. **Apply FM demodulation with carrier offset -8.733 MHz** (or -8.833 MHz)
+2. **Search for SoftRF Legacy sync word** `55 99 A5 A9 55 66 65 96`
+3. **Verify with XXTEA + CCITT-F CRC** (key from `Legacy.cpp`)
+4. If SoftRF Legacy fails, try other 915 MHz FSK protocols
 
 ## Key Files
 
-- `CRITICAL_FINDINGS_2026-10-12.md` — **THE AUTHORITATIVE DOCUMENT**
-- `REVERSE_ENGINEERING_NOTES.md` — SoftRF legacy protocol spec (NOT applicable to current signal)
-- `softrf_decoder.py` — Decoder for 2-FSK (NOT applicable to current signal)
-- `measure_symbols.py` — Symbol rate measurement
-- `extract_bitstream.py` — Bitstream extraction
+- `SESSION_REPORT_2026-10-20.md` — **AUTHORITATIVE** corrected analysis
+- `QUICK_REFERENCE.md` — Quick reference (updated)
+- `REVERSE_ENGINEERING_NOTES.md` — SoftRF Legacy protocol spec (2-FSK, XXTEA, CCITT)
+- `FSK_HYPOTHESIS_DISPROVEN.md` — SUPERSEDED (based on wrong offset)
+- `OOK_DECODING_ATTEMPT.md` — SUPERSEDED (wrong hypothesis)
 
 ## Superseded Documents
 
-- `ANALYSIS_INVALID_CAPTURE.md` — **SUPERSEDED** — prior "capture is invalid" conclusion was wrong
-- Prior sections of this document claiming the capture is invalid — **SUPERSEDED**
+- `ANALYSIS_INVALID_CAPTURE.md` — **SUPERSEDED** — capture is valid
+- `CRITICAL_FINDINGS_2026-10-12.md` — **PARTIALLY SUPERSEDED** (OOK/ASK claim rejected)
+- `FSK_HYPOTHESIS_DISPROVEN.md` — **SUPERSEDED** (wrong carrier offset)
+- `OOK_DECODING_ATTEMPT.md` — **SUPERSEDED** (wrong modulation hypothesis)
